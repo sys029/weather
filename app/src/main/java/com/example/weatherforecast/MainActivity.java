@@ -190,6 +190,110 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void api_key2(final String City) {
+        OkHttpClient client=new OkHttpClient();
+
+        Request request=new Request.Builder()
+                .url("https://api.openweathermap.org/data/2.5/forecast?q="+City+"&appid=a6f41d947e0542a26580bcd5c3fb90ef&units=metric")
+                .get()
+                .build();
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+        try {
+            Response response= client.newCall(request).execute();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(@NotNull Call call, @NotNull IOException e) {
+
+                }
+
+                @Override
+                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                    String responseData= response.body().string();
+                    try {
+                        JSONObject json=new JSONObject(responseData);
+                        JSONArray array=json.getJSONArray("list");
+                        JSONObject object=array.getJSONObject(1);
+
+                        JSONArray array1=object.getJSONArray("weather");
+                        JSONObject obj=array1.getJSONObject(0);
+
+                        String description=obj.getString("description");
+                        String icons = obj.getString("icon");
+
+                        JSONObject temp1= object.getJSONObject("main");
+                        Double Temperature=temp1.getDouble("temp");
+
+                        String temps=Math.round(Temperature)+" °C";
+                        setText(view_temp2,temps);
+                        setText(view_desc2,description);
+                        setImage(view_weather2,icons);
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private void api_key3(final String City) {
+        OkHttpClient client=new OkHttpClient();
+
+        Request request=new Request.Builder()
+                .url("https://api.openweathermap.org/data/2.5/forecast?q="+City+"&appid=a6f41d947e0542a26580bcd5c3fb90ef&units=metric")
+                .get()
+                .build();
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+        try {
+            Response response= client.newCall(request).execute();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(@NotNull Call call, @NotNull IOException e) {
+
+                }
+
+                @Override
+                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                    String responseData= response.body().string();
+                    try {
+                        JSONObject json=new JSONObject(responseData);
+                        JSONArray array=json.getJSONArray("list");
+                        JSONObject object=array.getJSONObject(2);
+
+                        JSONArray array1=object.getJSONArray("weather");
+                        JSONObject obj=array1.getJSONObject(0);
+
+                        String description=obj.getString("description");
+                        String icons = obj.getString("icon");
+
+                        JSONObject temp1= object.getJSONObject("main");
+                        Double Temperature=temp1.getDouble("temp");
+
+                        String temps=Math.round(Temperature)+" °C";
+                        setText(view_temp3,temps);
+                        setText(view_desc3,description);
+                        setImage(view_weather3,icons);
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+
+    }
+
+
+
     private void setText(final TextView text, final String value){
         runOnUiThread(new Runnable() {
             @Override
