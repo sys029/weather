@@ -82,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
                     imm.hideSoftInputFromWindow(getCurrentFocus().getRootView().getWindowToken(), 0);
                     api_key(String.valueOf(search.getText()));
                     api_key1(String.valueOf(search.getText()));
+                    api_key2(String.valueOf(search.getText()));
+                    api_key3(String.valueOf(search.getText()));
                 }
             }
         });
