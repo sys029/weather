@@ -5,11 +5,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -55,9 +57,16 @@ public class MainActivity extends AppCompatActivity {
         search_floating.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                InputMethodManager imm=(InputMethodManager)getSystemService(Activity.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(getCurrentFocus().getRootView().getWindowToken(),0);
-                api_key(String.valueOf(search.getText()));
+
+                if(TextUtils.isEmpty(search.getText().toString())){
+
+                    Toast.makeText(getApplicationContext(),"Enter a city",Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(getCurrentFocus().getRootView().getWindowToken(), 0);
+                    api_key(String.valueOf(search.getText()));
+                }
             }
         });
 
