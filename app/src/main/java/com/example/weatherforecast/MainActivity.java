@@ -1,18 +1,33 @@
 package com.example.weatherforecast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.ResultReceiver;
 import android.os.StrictMode;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.jetbrains.annotations.NotNull;
@@ -30,18 +45,25 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView view_city;
-    TextView view_temp,view_temp1,view_temp2,view_temp3;
-    TextView view_desc,view_desc1,view_desc2,view_desc3;
+    private static final  int REQUEST_CODE_LOCATION_PERMISSION=1;
+    private ProgressBar progressBar;
+    private ResultReceiver resultReceiver;
+    private TextView view_city;
+    private TextView view_temp,view_temp1,view_temp2,view_temp3;
+    private TextView view_desc,view_desc1,view_desc2,view_desc3;
 
     ImageView view_weather,view_weather1,view_weather2,view_weather3;
     EditText search;
     FloatingActionButton search_floating;
+    FloatingActionButton location_floating;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        resultReceiver=new AddressResultReceiver(new Handler());
+        progressBar=findViewById(R.id.progressBar);
 
         view_city=findViewById(R.id.town);
         view_city.setText("");
@@ -68,6 +90,25 @@ public class MainActivity extends AppCompatActivity {
         view_weather3=findViewById(R.id.wheather_image3);
         search=findViewById(R.id.search_edit);
         search_floating=findViewById(R.id.floating_search);
+        location_floating=findViewById(R.id.floating_location);
+
+        location_floating.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if(ContextCompat.checkSelfPermission(
+                        getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION
+                )!= PackageManager.PERMISSION_GRANTED){
+                    ActivityCompat.requestPermissions(
+                            MainActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                            REQUEST_CODE_LOCATION_PERMISSION
+                    );
+                }else {
+                    getCurrentLocation();
+                }
+
+            }
+        });
 
         search_floating.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -78,8 +119,8 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(),"Enter a city",Toast.LENGTH_SHORT).show();
                 }
                 else {
-                    InputMethodManager imm = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(getCurrentFocus().getRootView().getWindowToken(), 0);
+                    InputMethodManager imm = (InputMethodManager) v.getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
                     api_key(String.valueOf(search.getText()));
                     api_key1(String.valueOf(search.getText()));
                     api_key2(String.valueOf(search.getText()));
@@ -89,6 +130,76 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode==REQUEST_CODE_LOCATION_PERMISSION&&grantResults.length>0){
+            getCurrentLocation();
+        }else {
+            Toast.makeText(this,"Permission Denied",Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void getCurrentLocation() {
+
+        progressBar.setVisibility(View.VISIBLE);
+
+        final LocationRequest locationRequest= new LocationRequest();
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(3000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        LocationServices.getFusedLocationProviderClient(MainActivity.this)
+                .requestLocationUpdates(locationRequest,new LocationCallback(){
+
+                    @Override
+                    public void onLocationResult(LocationResult locationResult) {
+                        super.onLocationResult(locationResult);
+                        LocationServices.getFusedLocationProviderClient(MainActivity.this)
+                                .removeLocationUpdates(this);
+                        if (locationResult != null && locationResult.getLocations().size()>0){
+                            int latestLocationIndex= locationResult.getLocations().size()- 1;
+                            double latitude=locationResult.getLocations().get(latestLocationIndex).getLatitude();
+                            double longitude=locationResult.getLocations().get(latestLocationIndex).getLongitude();
+                            Location location=new Location("providerNA");
+                            location.setLatitude(latitude);
+                            location.setLongitude(longitude);
+                            fetchAddressFromLatLong(location);
+                        }else {
+
+                            progressBar.setVisibility(View.GONE);
+                        }
+
+                    }
+                }, Looper.getMainLooper());
+
+    }
+
+    private void fetchAddressFromLatLong(Location location){
+        Intent intent=new Intent(this,FetchAddressIntentService.class);
+        intent.putExtra(Constants.RECEIVER,resultReceiver);
+        intent.putExtra(Constants.LOCATION_DATA_EXTRA,location);
+        startService(intent);
+    }
+
+    private class AddressResultReceiver extends ResultReceiver{
+
+        public AddressResultReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            super.onReceiveResult(resultCode, resultData);
+            if(resultCode==Constants.SUCCESS_RESULT){
+                setText(search,resultData.getString(Constants.RESULT_DATA_KEY));
+            }else {
+                Toast.makeText(MainActivity.this,resultData.getString(Constants.RESULT_DATA_KEY),Toast.LENGTH_SHORT).show();
+            }
+            progressBar.setVisibility(View.GONE);
+        }
     }
 
     private void api_key(final String City) {
@@ -126,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
 
                         String temps=Math.round(Temperature)+" °C";
                         setText(view_temp,temps);
-                        setText(view_desc,description);
+                        setText(view_desc,description.toUpperCase());
                         setImage(view_weather,icons);
 
                     } catch (JSONException e) {
@@ -177,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
 
                         String temps=Math.round(Temperature)+" °C";
                         setText(view_temp1,temps);
-                        setText(view_desc1,description);
+                        setText(view_desc1,description.toUpperCase());
                         setImage(view_weather1,icons);
 
                     } catch (JSONException e) {
@@ -228,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
 
                         String temps=Math.round(Temperature)+" °C";
                         setText(view_temp2,temps);
-                        setText(view_desc2,description);
+                        setText(view_desc2,description.toUpperCase());
                         setImage(view_weather2,icons);
 
                     } catch (JSONException e) {
@@ -279,7 +390,7 @@ public class MainActivity extends AppCompatActivity {
 
                         String temps=Math.round(Temperature)+" °C";
                         setText(view_temp3,temps);
-                        setText(view_desc3,description);
+                        setText(view_desc3,description.toUpperCase());
                         setImage(view_weather3,icons);
 
                     } catch (JSONException e) {
