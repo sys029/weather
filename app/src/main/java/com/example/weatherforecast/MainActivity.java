@@ -7,6 +7,7 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -65,8 +66,9 @@ public class MainActivity extends AppCompatActivity {
         resultReceiver=new AddressResultReceiver(new Handler());
         progressBar=findViewById(R.id.progressBar);
 
+
         view_city=findViewById(R.id.town);
-        view_city.setText("");
+        view_city.setText("Hola!");
         view_temp=findViewById(R.id.temp);
         view_temp.setText("");
         view_temp1=findViewById(R.id.temp1);
@@ -119,12 +121,14 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(),"Enter a city",Toast.LENGTH_SHORT).show();
                 }
                 else {
+
                     InputMethodManager imm = (InputMethodManager) v.getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
                     imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
                     api_key(String.valueOf(search.getText()));
                     api_key1(String.valueOf(search.getText()));
                     api_key2(String.valueOf(search.getText()));
                     api_key3(String.valueOf(search.getText()));
+
                 }
             }
         });
@@ -203,13 +207,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void api_key(final String City) {
+
         OkHttpClient client=new OkHttpClient();
 
         Request request=new Request.Builder()
                 .url("https://api.openweathermap.org/data/2.5/weather?q="+City+"&appid=a6f41d947e0542a26580bcd5c3fb90ef&units=metric")
                 .get()
                 .build();
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        final StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
         try {
             Response response= client.newCall(request).execute();
@@ -239,6 +244,7 @@ public class MainActivity extends AppCompatActivity {
                         setText(view_temp,temps);
                         setText(view_desc,description.toUpperCase());
                         setImage(view_weather,icons);
+
 
                     } catch (JSONException e) {
                         e.printStackTrace();
